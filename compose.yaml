@@ -1,0 +1,48 @@
+# Start a recording:
+#   docker compose up
+#
+# That is the whole thing. The stream URL and token come from ./.env and the
+# command below supplies the rest. Ctrl+C stops it; the downloader drains and
+# finalises on the way out.
+#
+# The muxed .ts can be opened in a player while the recording is still running.
+# It is written at playback rate rather than as fast as segments arrive, so it
+# always has more on disk than the player has consumed.
+#
+# For anything other than a plain recording, address the service directly:
+#   docker compose run --rm recorder probe
+#   docker compose run --rm recorder keys
+#   docker compose run --rm recorder rebuild archive/run_<stamp>.out
+
+services:
+  recorder:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: stagecrowd-recorder:latest
+
+    # The default action is the one people came here for. Overriding it is still
+    # a matter of naming a different subcommand after the service.
+    command: ["capture"]
+
+    volumes:
+      # Both halves of a run land here: artefacts in ./archive/run_<stamp>/ and
+      # shards in ./archive/<run_name>/, because the downloader writes them as a
+      # sibling of the working directory. The rebuild command takes the former
+      # and finds the latter from run.json.
+      - ./archive:/archive
+      # Mounted, never copied in: a token baked into an image layer travels with
+      # every save and push of that image. Source is .env because that is what
+      # the surrounding tooling writes; the container path is what STC_SETTINGS
+      # points at, so either host filename works.
+      - ./.env:/config/.stagecrowd:ro
+      # Comment this out when there is no device file, or Docker creates a
+      # directory at the source path.
+      - ./device.wvd:/config/device.wvd:ro
+
+    # Required. Ctrl+C has to reach the downloader so it can drain and finalise
+    # its output; without an init process, PID 1 semantics swallow the signal and
+    # the muxed file keeps a damaged tail.
+    init: true
+    stdin_open: true
+    tty: true

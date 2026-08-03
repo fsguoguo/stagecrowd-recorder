@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "stagecrowd_recorder"
+version = "1.0.0"
+description = "Container-first archiver for Widevine-protected HLS live streams"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.optional-dependencies]
+# Local key derivation. pywidevine drags protobuf and construct along; a partial
+# install imports cleanly at package level and fails at first real use, so the
+# probe command exercises the import chain instead of asking pip what it holds.
+cdm = ["pywidevine>=1.9"]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+stagecrowd-recorder = "stagecrowd_recorder:main"
+
+[tool.setuptools.packages.find]
+include = ["stagecrowd_recorder*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-q"
