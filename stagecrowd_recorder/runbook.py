@@ -282,9 +282,9 @@ def execute(settings: Settings) -> int:
     console.detail(f"artefacts in {prepared.out_dir}")
     if settings.keep_shards:
         console.detail(
-            f"rebuild with: docker compose run --rm stagecrowd_recorder rebuild {prepared.out_dir}"
+            f"rebuild with: docker compose run --rm recorder rebuild {prepared.out_dir}"
         )
-    return 0 if status in (0, 130) else status
+    return status
 
 
 def describe_plan(settings: Settings) -> int:
@@ -385,7 +385,7 @@ def probe_environment(settings: Settings) -> int:
 
 def report_error(error: ArcError) -> int:
     console.fail(error.message, error.remedy)
-    return 2
+    return error.exit_code
 
 
 __all__ = [

@@ -22,7 +22,7 @@
 
 ### 1. 准备配置文件
 
-项目根目录放一个 `.stagecrowd` 或 `.env`：
+项目根目录放一个 `.stagecrowd` 或 `.env`（compose 挂载的是 `.env`，容器内会成为 `/config/.stagecrowd`）：
 
 ```ini
 m3u8=https://fastly.live.brightcove.com/.../playlist-hls.m3u8
@@ -99,9 +99,14 @@ docker compose up
 | `--no-shard-log` | 完全不跟踪分片 |
 | `--verbose-downloader` | 显示下载器自身的日志 |
 | `--guard-interval S` | 密钥轮换复查间隔，默认 240 秒 |
-| `--settings FILE` | 配置文件路径 |
+| `--settings FILE` | 配置文件路径。未指定时：设了 `$STC_SETTINGS` 就只用它，否则找 `./.stagecrowd` 或 `./.env` |
 
-退出码：`0` 成功，`1` 环境检查未通过，`2` 运行时错误，`130` 用户中断。
+`rebuild` / `probe` 不接受 `--settings`，要指定配置文件请写在子命令**之前**
+（`stagecrowd-recorder --settings FILE probe`）或用 `$STC_SETTINGS`。配置文件对每个命令
+都会加载，只是 `rebuild` 不从中取任何值，`probe` 取——它的 `--cdm` 默认值来自配置文件写入的环境变量。
+
+退出码：`0` 成功，`1` 环境/工具链检查未通过，`2` 运行时错误，`130` 用户中断。
+参数写错（含对 `rebuild` / `probe` 用 `--settings`）由 argparse 报告，同样是 `2`。
 
 ## 常见用法
 

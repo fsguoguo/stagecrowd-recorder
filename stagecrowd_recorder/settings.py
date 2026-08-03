@@ -36,6 +36,16 @@ DEFAULT_OUT_ROOT = Path("archive")
 # tooling already writes, and the parser reads it the same way either name.
 SETTINGS_NAMES = (".stagecrowd", ".env")
 
+# The search in prose. The file names come from SETTINGS_NAMES so they cannot
+# drift; the order around them is hand-written, and must be reworded whenever
+# find_settings_file changes. Note "when set", not "else": naming a file in the
+# environment replaces the search rather than starting it, so a bad $STC_SETTINGS
+# finds nothing at all. --help embeds this (argparse may wrap it across lines);
+# README's --settings row says the same in Chinese, and is edited by hand too.
+SETTINGS_SEARCH_HELP = (
+    f"${ENV_SETTINGS_FILE} when set, otherwise ./" + " or ./".join(SETTINGS_NAMES)
+)
+
 _ALIASES = {
     "url": ENV_URL,
     "m3u8": ENV_URL,

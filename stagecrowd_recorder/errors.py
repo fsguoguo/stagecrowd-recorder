@@ -12,6 +12,9 @@ from __future__ import annotations
 class ArcError(Exception):
     """Base for every condition an operator can act on."""
 
+    # Process exit code when this error reaches the top level.
+    exit_code: int = 2
+
     def __init__(self, message: str, remedy: str | None = None) -> None:
         super().__init__(message)
         self.message = message
@@ -40,6 +43,8 @@ class CoverageGap(ArcError):
 
 class ToolError(ArcError):
     """An external binary is missing, or present but not runnable."""
+
+    exit_code: int = 1
 
 
 class CaptureError(ArcError):

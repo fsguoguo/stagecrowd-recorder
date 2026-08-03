@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import sys
 from pathlib import Path
+from typing import NoReturn
 
 from . import console, runbook, salvage, settings as cfg
 from .errors import ArcError
@@ -19,17 +20,61 @@ from .settings import Settings
 from .toolchain import Decryptor
 
 
+class _Unreadable(Exception):
+    """Raised instead of exiting when the sniffer cannot read argv."""
+
+
+class _Sniffer(argparse.ArgumentParser):
+    """An argparse parser that reports failure to its caller, not to the user."""
+
+    def error(self, message: str) -> NoReturn:
+        # argparse's own diagnostic is dropped: the real parser is about to
+        # print a better one, against the real usage line.
+        raise _Unreadable
+
+
 def _settings_file_from_argv(argv: list[str]) -> Path | None:
-    """Pull --settings out of argv by hand, before the parser exists."""
-    for index, token in enumerate(argv):
-        if token == "--settings" and index + 1 < len(argv):
-            return Path(argv[index + 1])
-        if token.startswith("--settings="):
-            return Path(token.split("=", 1)[1])
-    return None
+    """Pull --settings out of argv before the real parser exists.
+
+    A throwaway parser rather than a hand-rolled scan, so that every spelling
+    argparse accepts — ``--settings X``, ``--settings=X``, and prefix
+    abbreviations such as ``--set X`` — resolves to the same file here.
+
+    It scans the whole argv, so it also picks the flag up after ``rebuild`` or
+    ``probe``, where the real parser does not accept it and will exit with
+    "unrecognized arguments". The file is loaded either way; only the exit
+    status differs.
+
+    A malformed argv yields None rather than a diagnostic: complaining is the
+    real parser's job, and its usage line is the one worth showing.
+    """
+    sniffer = _Sniffer(add_help=False)
+    sniffer.add_argument("--settings")
+    try:
+        known, _ = sniffer.parse_known_args(argv)
+    except _Unreadable:
+        return None
+    return Path(known.settings) if known.settings else None
+
+
+def _add_settings_option(parser: argparse.ArgumentParser) -> None:
+    """Teach one parser that --settings exists.
+
+    Nothing ever reads the parsed value: the file was already located by
+    _settings_file_from_argv and applied to the environment before this parser
+    existed. SUPPRESS only keeps a subparser from overwriting the root's
+    attribute with a default when the flag is absent.
+    """
+    parser.add_argument(
+        "--settings",
+        metavar="FILE",
+        default=argparse.SUPPRESS,
+        help=f"settings file (default: {cfg.SETTINGS_SEARCH_HELP})",
+    )
 
 
 def _add_stream_options(parser: argparse.ArgumentParser) -> None:
+    _add_settings_option(parser)
     parser.add_argument(
         "--url",
         default=cfg.env(cfg.ENV_URL),
@@ -106,7 +151,7 @@ def build_parser() -> argparse.ArgumentParser:
         prog="stagecrowd_recorder",
         description="Archive a Widevine-protected HLS live stream.",
     )
-    parser.add_argument("--settings", metavar="FILE", help="settings file (default: ./.stagecrowd)")
+    _add_settings_option(parser)
     subcommands = parser.add_subparsers(dest="command", required=True)
 
     for name, help_text in (
