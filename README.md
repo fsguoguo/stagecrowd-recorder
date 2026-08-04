@@ -1,8 +1,6 @@
 # stagecrowd-recorder
 
-容器内归档 Widevine 加密的 HLS 直播流。取密钥、下载、解密、封装，全程一条命令。
-
-录制中的 `.ts` 文件可以直接用播放器打开边录边看，无需额外服务或端口。
+容器内归档 Widevine 加密的 HLS 直播流。取密钥、下载、解密、封装。
 
 ## 功能
 
@@ -22,7 +20,7 @@
 
 ### 1. 准备配置文件
 
-项目根目录放一个 `.stagecrowd` 或 `.env`（compose 挂载的是 `.env`，容器内会成为 `/config/.stagecrowd`）：
+项目根目录放一个  `.env`（compose 挂载的是 `.env`，容器内会成为 `/config/.stagecrowd`）：
 
 ```ini
 m3u8=https://fastly.live.brightcove.com/.../playlist-hls.m3u8
@@ -53,10 +51,6 @@ docker compose build
 ```powershell
 docker compose run --rm recorder probe
 ```
-
-`probe` 会实际运行每个二进制并加载 CDM，输出应为 `ready`。它不需要流地址和 token，
-所以能在直播开始前、拿到 token 之前先确认环境。`capture` 自己也会做同样的验证，
-但那发生在取完密钥之后——届时才发现 CDM 有问题，token 已经用掉一次了。
 
 ### 4. 开始录制
 
